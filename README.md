@@ -1,4 +1,4 @@
-# JavaScript规范
+# JavaScript规范 
 
 ## <a name='TOC'>内容列表</a>
 
