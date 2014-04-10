@@ -40,24 +40,24 @@
 	15、只书写重要的注释
 **[[⬆]](#TOC)**
 ## <a name='types'>类型</a>
-- ** javascript一共有5种原始值 ** 在某种意义上它被称为数据类型
-+ `string`
-+ `number`
-+ `boolean`
-+ `null`
-+ `undefined`
-- ** 我们在使用原始值的时候直接这样 **
+javascript一共有5种原始值，在某种意义上它被称为数据类型
+1、string
+2、number
+3、boolean
+4、null
+5、undefined
+我们在使用原始值的时候直接这样
 ```javascript
 var a='我是字符串',
 	b=1,
 	c=false,
 	d=null;
 ```
-- ** 不要这样 **
+不要这样
 ```javascript
 	var a=string('我是字符串');
 ```
-- ** object **对象
+- object对象
 **[[⬆]](#TOC)**
 ## <a name='contributors'>贡献者</a>
 单骑闯天下  (前端攻城狮，现居长沙，喜欢画画)
