@@ -38,9 +38,12 @@
 	13、如果循环简单就用while循环
 	14、代码不向文档写入样式比如"style="color:#fff"而是控制class的值
 	15、只书写重要的注释
+	
 **[[⬆]](#TOC)**
+
 ## <a name='types'>类型</a>
-- ** javascript一共有5种原始值 ** 在某种意义上它被称为数据类型
+
+- **javascript一共有5种原始值** 在某种意义上它被称为数据类型
 
 + `string`
 + `number`
@@ -48,7 +51,7 @@
 + `null`
 + `undefined`
 
-- ** 我们在使用原始值的时候直接这样 **
+- **我们在使用原始值的时候直接这样**
 
 ```javascript
 var a='我是字符串',
@@ -56,12 +59,12 @@ var a='我是字符串',
 	c=false,
 	d=null;
 ```
-- ** 不要这样 **
+- **不要这样**
 
 ```javascript
 	var a=string('我是字符串');
 ```
-- ** object **对象
+- **object**对象
 
 **[[⬆]](#TOC)**
 
