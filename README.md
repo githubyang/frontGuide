@@ -1,4 +1,4 @@
-# JavaScript规范 
+# JavaScript规范 1.0
 注:前端开发指南里面的javascript部分，本指南非官方文档，而是由Q.js开源项目组发起，目的是让前端代码更健壮，但是她基于Q.js框架。
 ## <a name='TOC'>内容列表</a>
 1. [约定](#promise)
@@ -80,7 +80,75 @@ var obj={}
 ```javascript
 var arr=[]
 ```
-- **
+
+**[[⬆]](#TOC)**
+
+## <a name='objects'>对象</a>
+在js里面一切皆是对象，我们除了可以扩展内置对象外还可以自定义对象。
+当我们在使用Q.js框架的时候，我们希望对自定义对象进行扩展，那么我们可以这么做：
+```javascript
+var obj={
+	a:function(){},
+	b:function(){}
+};
+var o=Q.extend(obj,{c:function(){}});
+```
+我们也可以基于原型链
+```javascript
+var obj={
+	a:function(){},
+	b:function(){}
+};
+obj.prototype.c=function(){};
+```
+
+**[[⬆]](#TOC)**
+
+## <a name='arrays'>数组</a>
+数组可以存很多东西，比如字符串、函数、对象、数字等。
+声明数组不能用new声明必须以字面量的方式如：
+```javascript
+var arr=[];
+```
+我们在借用数组的方法时候不推荐这样[].prototype.slice.call()，必须这样Array.prototype.slice.call()
+
+**[[⬆]](#TOC)**
+
+## <a name='strings'>字符串</a>
+字符串我们经常用到很多时候我们用“+”号来链接字符串，如果字符串很长那么必须截取字符串存入数组，建议字符串超过80个字符的时候进行截取。
+split();join();这两个方法足够拼接字符串。
+“+”号的性能在高版本的浏览器性能理论上别join的性能还高
+
+**[[⬆]](#TOC)**
+
+## <a name='functions'>函数</a>
+自执行函数用(function(){}())方法不要用new function(){}方法。
+声明函数使用var 函数名=function(){}，请勿用function 函数名(){}。
+每个函数应当是有意义的，即具有可复用性和可扩展性。
+
+**[[⬆]](#TOC)**
+
+## <a name='properties'>属性</a>
+js里面只要是对象就可以扩展属性，在这里我想说的就是利用一些原生属性来代替自己写的功能函数和正则。
+
+**[[⬆]](#TOC)**
+
+## <a name='variables'>变量</a>
+多个变量声明:
+```javascript
+var a=1,
+	b=2,
+	c=3;
+```
+不能这样声明变量:
+```javascript
+var a=b=1;
+```
+
+**[[⬆]](#TOC)**
+
+## <a name='conditionals'>条件表达式和等号</a>
+用“===”代替“==”
 
 **[[⬆]](#TOC)**
 
