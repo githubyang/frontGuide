@@ -134,7 +134,24 @@ filter方法最后一句是组成对象返回。
 
 如果你能看到这里，那么我们会发现，DOM操作开销昂贵，你看一个选择饶了这么大一个圈。（性能问题这里不细说）
 
+- **jQuery( element )**
+例子：
+```javascript
+$(document.body);
+```
+原理:
 
+参数将会被this.get方法里面的参数进行判断，调用find方法进行处理，由于参数非字符串，所以直接包装成数组返回，然后this.get开始执行返回的数组，执行之后返回jquery对象。
+
+最后完成了，这个选择方法内部处理是不是特别简单啊。
+
+- **jQuery( elementArray )**
+例子：
+```javascript
+$([document.body,window]);
+```
+原理:
+参数将会被this.get方法里面的参数进行判断，调用jQuery.merge方法进行处理，返回数组，然后this.get开始执行返回的数组，执行之后返回jquery对象。
 
 **[[⬆]](#TOC)**
 
