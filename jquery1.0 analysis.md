@@ -54,7 +54,87 @@ $('div.foo');
 ```
 原理:
 
-在框架的内部通过this.get方法来进行初始判断然后通过jQuery.find方法来选择元素，那么我们现在进入jQuery.find源码。
+在框架的内部通过this.get方法作为入口(在这里该方法负责返回包装好的jquery对象)，然后在该参数里面进行判断，调用jQuery.find方法。
+
+现在我们进入jQuery.find方法内部:
+```javascript
+for ( var i = 0; i < ret.length; i++ ){
+    r = jQuery.merge( r,m[2] == "*" ?jQuery.getAll(ret[i]) :ret[i].getElementsByTagName(m[2]));
+}
+```
+通过jQuery.merge和getElementsByTagName返回包装成数组的所有div标签。
+
+然后通过jQuery.filter方法再对标签进行匹配筛选，现在进入jQuery.filter方法内部:
+```javascript
+filter: function(t,r,not) {
+    var g = not !== false ? jQuery.grep : function(a,f) {return jQuery.grep(a,f,true);};
+    while ( t && /^[a-z[({<*:.#]/i.test(t) ) {// 这里我们需要关注它的循环次数
+        var p = jQuery.parse;// 正则匹配的数组
+        for ( var i = 0; i < p.length; i++ ) {
+            var re = new RegExp( "^" + p[i][0].replace( 'S', "([a-z*_-][a-z0-9_-]*)" ).replace( 'Q', " *'?\"?([^'\"]*?)'?\"? *" ), "i" );
+            var m = re.exec( t );
+			if ( m ) {
+                if ( p[i][1] )
+                    m = ["", m[1], m[3], m[2], m[4]];
+                // 删除我们刚才匹配
+                t = t.replace( re, "" );
+				break;
+            }
+        }
+        if ( m[1] == ":" && m[2] == "not" )
+            r = jQuery.filter(m[3],r,false).r;
+        else {
+            var f = jQuery.expr[m[1]];
+            if ( f.constructor != String ){
+                f = jQuery.expr[m[1]][m[2]];
+            }
+            eval("f = function(a,i){" + ( m[1] == "@" ? "z=jQuery.attr(a,m[3]);" : "" ) + "return " + f + "}");
+            r = g( r, f );
+        }
+    }
+    // 返回过滤元素的数组 (r)
+    // 修改后的字符串 (t)
+    return { r: r, t: t };
+},
+```
+大部分处理基本上在这里面完成了，声明变量g指向方法jQuery.grep，里面有个while循环，参数有个正则匹配，在这里可以匹配两次，也就是说while会有两次循环，记住这可是关键。
+
+jQuery.parse是一个正则匹配二维数组，里面的数字值代表true or false后面会用到，里面我们会看到大写的字母，那是应为它是替换标识。
+
+现在开始进行循环匹配，如果匹配不成立就会返回null。里面有个条件匹配，在这里它只干了一件事，就是删除匹配的字符串。
+
+跳出for循环之后则开始执行下一个判断语句的第二个分支，jQuery.expr是取得筛选的操作方法，但是取出来是字符串的，所以就有下面的eval。
+
+注意了，这里就开始执行真正的筛选了。grep方法里面有这么一个循环：
+
+```javascript
+for ( var i = 0; i < elems.length; i++ ){
+    if ( !inv && fn(elems[i],i) || inv && !fn(elems[i],i) ){
+        result.push( elems[i] );
+    }
+}
+```
+这里面调用了方法进行了匹配，1、m[2]== '*'||a.nodeName.toUpperCase()==m[2].toUpperCase()，jQuery.className.has(a,m[2])
+
+第一个的意思是节点的名称全部转换成大写和正则捕获的m[2]转成大写进行对比。
+
+第二个的意思是用正则匹配class值(看className.has方法源码)
+
+在这个循环里面只有返回真的就压入result数组，然后返回。
+
+filter方法最后一句是组成对象返回。
+
+再回到find方法最后一个分支，filter方法返回的对象被val变量指向，最后通过jQuery.merge方法组装成数组返回。
+
+再回到this.get方法，查看它的源码我们发现，它只干了一件事那就是把返回的数组加入到jquery对象。
+
+这样就大功告成了，是不是感觉很多函数穿插，那没办法，jquery就是这样。如果觉得绕来绕去有点晕，那千万别灰心，刚开始看都是这样的。
+
+记得有个大师说过“得道者犹如庖丁解牛，不得道者犹如坠云雾”。
+
+如果你能看到这里，那么我们会发现，DOM操作开销昂贵，你看一个选择饶了这么大一个圈。（性能问题这里不细说）
+
+
 
 **[[⬆]](#TOC)**
 
