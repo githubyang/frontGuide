@@ -52,6 +52,7 @@ jQuery( callback )
 ```javascript
 $('div.foo');
 ```
+概念:接受一个字符串，其中包含了用于匹配元素集合的 CSS 选择器。
 原理:
 
 在框架的内部通过this.get方法作为入口(在这里该方法负责返回包装好的jquery对象)，然后在该参数里面进行判断，调用jQuery.find方法。
@@ -155,13 +156,83 @@ $([document.body,window]);
 
 **[[⬆]](#TOC)**
 
+- **jQuery( object )**
+例子：
+```javascript
+$($());
+```
+概念:当以参数的形式向 $() 函数传递 jQuery 对象后，会创建一个该对象的副本。
+原理:
+参数将会被this.get方法里面的参数进行判断，调用jQuery.merge方法进行处理，返回数组，然后this.get开始执行返回的数组，执行之后返回jquery对象。
 
 
 **[[⬆]](#TOC)**
 
+- **jQuery()**
+例子：
+```javascript
+$();
+```
+概念:返回包含document的jquery对象的集合。
+原理:
+参数将会被this.get方法里面的参数进行判断，调用jQuery.merge方法进行处理，返回数组，然后this.get开始执行返回的数组，执行之后返回jquery对象。
+
+这几个的处理方法都一样。
 
 
 **[[⬆]](#TOC)**
+
+- **jQuery( html, [ ownerDocument ] )**
+例子：
+```javascript
+$("<p id="test">My <em>new</em> text</p>");
+```
+概念：可以理解为用来创建html字符串。
+原理：
+参数将会被正则匹配，然后转入分支执行，由jquery.clean方法执行，现在我们进入它的内部
+```javascript
+clean: function(a) {
+    var r = [];
+    for ( var i = 0; i < a.length; i++ ) {
+        if ( a[i].constructor == String ) {
+            var table = "";
+            if ( !a[i].indexOf("<thead") || !a[i].indexOf("<tbody") ) {
+                table = "thead";
+                a[i] = "<table>" + a[i] + "</table>";
+            } else if ( !a[i].indexOf("<tr") ) {
+                table = "tr";
+                a[i] = "<table>" + a[i] + "</table>";
+            } else if ( !a[i].indexOf("<td") || !a[i].indexOf("<th") ) {
+                table = "td";
+                a[i] = "<table><tbody><tr>" + a[i] + "</tr></tbody></table>";
+            }
+            var div = document.createElement("div");
+            div.innerHTML = a[i];
+            if ( table ) {
+                div = div.firstChild;
+                if ( table != "thead" ) div = div.firstChild;
+                if ( table == "td" ) div = div.firstChild;
+            }
+    
+            for ( var j = 0; j < div.childNodes.length; j++ )
+                r.push( div.childNodes[j] );
+        } else if ( a[i].jquery || a[i].length && !a[i].nodeType ){
+            for ( var k = 0; k < a[i].length; k++ ){
+                r.push( a[i][k] );
+            }
+        }else if ( a[i] !== null ){
+            r.push( a[i].nodeType ? a[i] : document.createTextNode(a[i].toString()) );
+        }
+    }
+    return r;
+},
+```
+这个循环只会循环一次，然后进入第一个分支，这里面有几个分支是专门用来处理表格的，第一个分支里面的最后一个循环是关键，它把创建的内容压入数组r。
+
+最后返回r给a变量，然后进入this.get方法在变量里面进行判断然后通过jQuery.merge方法进行数组合并接着this.get方法执行返回包装好的jquery对象。
+
+jquery里面的函数穿插虽然让代码阅读带来困难，但是它能让函数高度复用。
+
 
 
 **[[⬆]](#TOC)**
