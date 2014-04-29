@@ -4,6 +4,8 @@
 1. [简介](#introduction)
 1. [框架设计思路](#ideas)
 1. [DOM选择器](#selector)
+1. [事件系统](#events)
+1. [DOM属性操作](#attribute)
 
 ## <a name='introduction'>简介</a>
 
@@ -28,6 +30,7 @@ jquery是一个伟大的框架，从2006年到现在，全球至少有50%以上�
 
 
 **[[⬆]](#TOC)**
+- DOM选择器
 
 ## <a name='selector'>DOM选择器</a>
 
@@ -187,9 +190,11 @@ $();
 ```javascript
 $("<p id="test">My <em>new</em> text</p>");
 ```
+
 概念：可以理解为用来创建html字符串。
-原理：
-参数将会被正则匹配，然后转入分支执行，由jquery.clean方法执行，现在我们进入它的内部
+
+原理：参数将会被正则匹配，然后转入分支执行，由jquery.clean方法执行，现在我们进入它的内部
+
 ```javascript
 clean: function(a) {
     var r = [];
@@ -234,13 +239,251 @@ clean: function(a) {
 jquery里面的函数穿插虽然让代码阅读带来困难，但是它能让函数高度复用。
 
 
-
-**[[⬆]](#TOC)**
-
 **[[⬆]](#TOC)**
 
 
+- **jQuery( callback )**
+
+概念：jquery有名的延迟加载。
+
+原理：在jquery第一个分支就判断了，如果是函数就调用 jQuery(document).ready(a)执行,这是个链式调用。现在我们进入该函数内部：
+```javascript
+ready: function(f) {
+    if ( jQuery.isReady )
+        f.apply( document );
+    else {
+        jQuery.readyList.push( f );
+    }
+        return this;
+    }
+```
+这个方法的意思就是，如果文档就绪了那么立即执行函数否则加入等待队列。
+
+这里还有个关键代码部分，他在初始化jquery对象的时候就执行了。
+```javascript
+// 如果Mozilla
+if ( jQuery.browser.mozilla || jQuery.browser.opera ) {
+    // 使用方便的事件回调
+    document.addEventListener( "DOMContentLoaded", jQuery.ready, false );
+    
+    // 如果IE
+    // http://www.outofhanwell.com/blog/index.php?title=the_window_onload_problem_revisited
+} else if ( jQuery.browser.msie ) {
+    document.write("<scr" + "ipt id=__ie_init defer=true " + "src=//:><\/script>");
+    var script = document.getElementById("__ie_init");
+    script.onreadystatechange = function() {
+        if ( this.readyState == "complete" )
+            jQuery.ready();
+    };
+    script = null;
+    
+    // 对于Safari 每10毫秒检测一次文档的加载状态
+} else if ( jQuery.browser.safari ) {
+    jQuery.safariTimer = setInterval(function(){
+        if ( document.readyState == "loaded" || 
+            document.readyState == "complete" ) {
+            clearInterval( jQuery.safariTimer );
+            jQuery.safariTimer = null;
+            jQuery.ready();
+        }
+    }, 10);
+}
+jQuery.event.add( window, "load", jQuery.ready );
+```
+三个分支都是判断浏览器从而实现兼容，对于ie的判断这里要重点说下，如果是ie浏览那么就向文档流写入一个脚本资源，设置“defer=true”属性，最后检测脚本对象“onreadystatechange”。
+如果三个判断都失效的话就绑定加载事件“onload”。
+以上基本的都分析完了，当然肯定有些地方还不够详细，那只能后面慢慢完善了。如果你意犹未尽，那可以自己再详细阅读源码。
+
+
 **[[⬆]](#TOC)**
+
+## <a name='events'>事件系统</a>
+
+- **bind方法分析**
+概念：bind方法是jquery里面的事件绑定方法。
+
+原理：jquery的事件系统1.0版本是很简单的，也没有用到数据缓存，不过它为以后事件系统的发展指明了方向。下面我们开始进入事件绑定方法的入口文件：
+```javascript
+each: {
+
+    removeAttr: function( key ) {
+        this.removeAttribute( key );
+    },
+    show: function(){
+        this.style.display = this.oldblock ? this.oldblock : "";
+        if ( jQuery.css(this,"display") == "none" )
+            this.style.display = "block";
+    },
+    hide: function(){
+        this.oldblock = this.oldblock || jQuery.css(this,"display");
+        if ( this.oldblock == "none" )
+            this.oldblock = "block";
+        this.style.display = "none";
+    },
+    toggle: function(){
+        $(this)[ $(this).is(":hidden") ? "show" : "hide" ].apply( $(this), arguments );
+    },
+    addClass: function(c){
+        jQuery.className.add(this,c);
+    },
+    removeClass: function(c){
+        jQuery.className.remove(this,c);
+    },
+    toggleClass: function( c ){
+        jQuery.className[ jQuery.className.has(this,c) ? "remove" : "add" ](this,c);
+    },
+
+    remove: function(a){
+        if ( !a || jQuery.filter( [this], a ).r )
+            this.parentNode.removeChild( this );
+    },
+    empty: function(){
+        while ( this.firstChild )
+            this.removeChild( this.firstChild );
+    },
+    bind: function( type, fn ) {
+        if ( fn.constructor == String )
+            fn = new Function("e", ( !fn.indexOf(".") ? "$(this)" : "return " ) + fn);
+        jQuery.event.add( this, type, fn );
+    },
+
+    unbind: function( type, fn ) {
+        jQuery.event.remove( this, type, fn );
+    },
+    trigger: function( type, data ) {
+        jQuery.event.trigger( type, data, this );
+    }
+}
+```
+这一段代码是属于jquery.macros对象里面的，里面定义了我们常用事件的绑定方法，现在我们一个一个的分析，bind方法可以用来绑定很多的常用事件需要两个参数。
+
+第一个是事件的类型，第二个是需要绑定的函数。分支语句判断第二个参数如果是字符串并且第一个字符是"."的话那么执行第一个元(这个主要是调用已有的插件或者jquery自带的方法)否则执行第二个元。
+
+然后执行jQuery.event.add方法进行绑定。
+
+现在我们来看下jQuery.event.add方法的源码，这个是关键，很多方法的绑定都用到它。
+```javascript
+event: {
+    // 绑定一个事件到元素
+    add: function(element, type, handler) {
+        // 针对IE浏览器
+        if ( jQuery.browser.msie && element.setInterval != undefined )
+            element = window;
+        
+        // 给事件函数绑定一个唯一id
+        if ( !handler.guid )
+            handler.guid = this.guid++;
+
+        // 在dom里面扩展events对象
+        if (!element.events)
+            element.events = {};
+            
+        // 获取绑定到当前元素的事件函数
+        var handlers = element.events[type];
+            
+        if (!handlers) {
+            handlers = element.events[type] = {};
+                
+            // 如果当前元素上已经绑定了事件函数那么把它加入到handlers
+            if (element["on" + type])
+                handlers[0] = element["on" + type];
+        }
+
+        // 将当前元素的事件绑定列表添加到回调处理程序
+        handlers[handler.guid] = handler;
+            
+        // 添加事件绑定程序到当前元素
+        element["on" + type] = this.handle;
+    
+        // 把绑定到当前元素的事件函数加入到global对象里面缓存
+        if (!this.global[type])
+            this.global[type] = [];
+        this.global[type].push( element );
+    },
+        
+    guid: 1,
+    global: {},
+        
+    // 删除事件绑定 如果传入的参数是空那么移除所有的事件函数
+    remove: function(element, type, handler) {
+        if (element.events)
+            if (type && element.events[type])
+                if ( handler )
+                    delete element.events[type][handler.guid];
+                else
+                    for ( var i in element.events[type] )
+                        delete element.events[type][i];
+                else
+                    for ( var j in element.events )
+                        this.remove( element, j );
+    },
+        
+    trigger: function(type,data,element) {
+        data = data || [];
+    
+        // Handle a global trigger
+        if ( !element ) {
+            var g = this.global[type];
+            if ( g )
+                for ( var i = 0; i < g.length; i++ )
+                    this.trigger( type, data, g[i] );
+    
+            // 处理函数
+        } else if ( element["on" + type] ) {
+            // 模拟事件传递
+            data.unshift( this.fix({ type: type, target: element }) );
+    
+            // 触发事件
+            element["on" + type].apply( element, data );
+        }
+    },
+        
+    handle: function(event) {
+        if ( typeof jQuery == "undefined" ) return;
+
+        event = event || jQuery.event.fix( window.event );
+        if ( !event ) return;
+        
+        var returnValue = true;
+
+        var c = this.events[event.type];
+        // 执行事件绑定函数
+        for ( var j in c ) {
+            if ( c[j].apply( this, [event] ) === false ) {
+                event.preventDefault();
+                event.stopPropagation();
+                returnValue = false;
+            }
+        }
+            
+        return returnValue;
+    },
+    // 阻止浏览器的默认行为和事件冒泡 其实属于事件修正函数
+    fix: function(event) {
+        if ( event ) {
+            event.preventDefault = function() {
+                this.returnValue = false;
+            };
+            
+            event.stopPropagation = function() {
+                this.cancelBubble = true;
+            };
+        }
+            
+        return event;
+    }
+    
+}
+```
+event对象里面的add方法用来绑定事件到元素，第一个参数是需要绑定的当前元素，第二个是事件类型，第三个是函数。
+
+这里面的代码都已经注释，所以就不一一再叙述。
+
+
+**[[⬆]](#TOC)**
+
+## <a name='attribute'>DOM属性操作</a>
+
 
 
 **[[⬆]](#TOC)**
