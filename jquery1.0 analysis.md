@@ -6,6 +6,7 @@
 1. [DOM选择器](#selector)
 1. [事件系统](#events)
 1. [DOM属性操作](#attribute)
+1. [贡献者们](#author)
 
 ## <a name='introduction'>简介</a>
 
@@ -510,6 +511,7 @@ event对象里面的add方法用来绑定事件到元素，第一个参数是需
 
 **[[⬆]](#TOC)**
 
-## <a name='contributors'>贡献者</a>
+## <a name='author'>贡献者们</a>
 单骑闯天下  (前端攻城狮，现居长沙，喜欢画画和军事)
+
 **[[⬆]](#TOC)**
